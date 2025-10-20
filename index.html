@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>💞 Together To-Do List</title>
+  <style>
+    :root { --bg:#f7fafc; --card:#fff; --fg:#1a202c; --muted:#718096; --accent:#2b6cb0; --accent-2:#38a169; --danger:#e53e3e; --warn:#d69e2e; --chip:#edf2f7; --shadow:0 8px 24px rgba(0,0,0,.06); --radius:14px; }
+    *{ box-sizing:border-box; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; }
+    body{ margin:0; background:linear-gradient(135deg,#f0f4ff,#ffffff); color:var(--fg); }
+    .wrap{ max-width:980px; margin:24px auto 64px; padding:0 16px; }
+    header{ text-align:center; margin-bottom:24px; }
+    h1{ font-size:clamp(22px,3.8vw,34px); margin:0; color:#2c5282; }
+    .select,input[type="date"],input[type="text"]{ padding:12px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; min-width:140px; }
+    button{ border:0; border-radius:10px; padding:12px 14px; cursor:pointer; box-shadow:var(--shadow); font-weight:600; }
+    .btn-primary{ background:var(--accent); color:#fff; }
+    .btn-danger{ background:var(--danger); color:#fff; }
+    .btn-done{ background:var(--accent-2); color:#fff; }
+    .card{ background:var(--card); border:1px solid #e2e8f0; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:16px; }
+    .card h3{ margin:2px 0 12px; font-size:18px; color:#2d3748; }
+    .row{ display:flex; flex-wrap:wrap; gap:10px; }
+    .grow{ flex:1 1 220px; }
+    .muted{ color:var(--muted); font-size:13px; }
+    .tasks{ display:grid; gap:10px; }
+    .task{ border:1px solid #e2e8f0; border-radius:12px; padding:12px; display:grid; gap:10px; }
+    .task.prio { background:#FFECEC; border-color:#FEB2B2; }   /* red (priority) */
+    .task.normal { background:#EBF8FF; border-color:#90CDF4; } /* blue (normal open) */
+    .task.done { background:#E6FFED; border-color:#9AE6B4; }   /* green (completed) */
+    .taskHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .taskTitle{ font-weight:700; }
+    .chips{ display:flex; gap:6px; flex-wrap:wrap; }
+    .chip{ background:var(--chip); border:1px solid #e2e8f0; padding:6px 10px; border-radius:999px; font-size:12px; }
+    .chip.warn{ background:#FFF7E6; border-color:#F6AD55; color:#975A16; }
+    .chip.overdue{ background:#FFF5F5; border-color:#FEB2B2; color:#9B2C2C; font-weight:700; }
+    .chip.assignee{ background:#F0FFF4; border-color:#9AE6B4; color:#22543D; }
+    .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .sectionTitle{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .empty{ text-align:center; color:var(--muted); padding:12px 0; }
+    .footerNote{ text-align:center; color:#a0aec0; margin-top:10px; font-size:12px; }
+    .person-title { font-size:18px; margin:0 0 8px; color:#2d3748; }
+    .subhead { font-size:14px; margin:10px 0 4px; color:#4a5568; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header><h1> 💞 Together To-Do List</h1></header>
+
+    <section class="card">
+      <h3>➕ Add a Task</h3>
+      <div class="row">
+        <input id="title" class="grow" type="text" placeholder="Task description (e.g., Pay bill)" />
+        <select id="assignee" class="select">
+          <option value="Manya">Assign to 💃 Manya</option>
+          <option value="Sharan">Assign to 🕺 Sharan</option>
+        </select>
+        <label class="muted" style="display:flex; align-items:center; gap:8px;">
+          <input id="priority" type="checkbox" /> Priority
+        </label>
+        <input id="deadline" type="date" />
+        <button id="addBtn" class="btn-primary">Add</button>
+      </div>
+      <p class="muted" style="margin-top:8px;">Priority = red · Normal = blue · Completed = green. Completed auto-delete after 3 days.</p>
+    </section>
+
+    <section class="card">
+      <h3>📈 Motivation</h3>
+      <div class="row" style="gap:10px;">
+        <div class="chip" style="font-size:14px;">💃 <strong>Manya</strong> — Completed: <span id="countManya">0</span></div>
+        <div class="chip" style="font-size:14px;">🕺 <strong>Sharan</strong> — Completed: <span id="countSharan">0</span></div>
+      </div>
+    </section>
+
+    <!-- Manya section -->
+    <section class="card">
+      <div class="sectionTitle"><h3 class="person-title">💃 Manya — Tasks</h3><span class="muted" id="mMeta"></span></div>
+      <div class="subhead">⭐ Priority</div>
+      <div id="mPrioList" class="tasks"></div>
+      <div class="subhead">🔵 Open (Normal)</div>
+      <div id="mOpenList" class="tasks"></div>
+      <div class="subhead">✅ Completed (last 3 days)</div>
+      <div id="mDoneList" class="tasks"></div>
+      <div class="empty" id="mEmpty" style="display:none;">No tasks for Manya</div>
+    </section>
+
+    <!-- Sharan section -->
+    <section class="card">
+      <div class="sectionTitle"><h3 class="person-title">🕺 Sharan — Tasks</h3><span class="muted" id="sMeta"></span></div>
+      <div class="subhead">⭐ Priority</div>
+      <div id="sPrioList" class="tasks"></div>
+      <div class="subhead">🔵 Open (Normal)</div>
+      <div id="sOpenList" class="tasks"></div>
+      <div class="subhead">✅ Completed (last 3 days)</div>
+      <div id="sDoneList" class="tasks"></div>
+      <div class="empty" id="sEmpty" style="display:none;">No tasks for Sharan</div>
+    </section>
+
+    <!-- Housekeeping -->
+    <section class="card">
+      <div class="sectionTitle">
+        <h3>🧹 Housekeeping</h3>
+        <button id="deleteOldBtn" class="btn-danger" title="Delete completed tasks older than 3 days">Delete old completed</button>
+      </div>
+      <p class="muted">This deletes only completed tasks older than 3 days.</p>
+    </section>
+
+    <p class="footerNote">Backed by Firebase Firestore (anonymous sign-in, lightweight).</p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import {
+      getFirestore, collection, addDoc, doc, getDocs, query, where,
+      serverTimestamp, updateDoc, deleteDoc
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+    // ✅ Your config (kept as you shared)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVrmyBKYTBAdqlrqOJqueBn_1MCcJGI2s",
+      authDomain: "together-to-do-list.firebaseapp.com",
+      projectId: "together-to-do-list",
+      storageBucket: "together-to-do-list.appspot.com",
+      messagingSenderId: "45805819287",
+      appId: "1:45805819287:web:fac694a617e748c634e0d2",
+      measurementId: "G-M0QQ87EXZJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Collections
+    const TASKS = collection(db, 'tasks'); // {title,assignee,priority,deadline,createdAt,createdAtMs,status,completedAt,completedAtMs}
+    const STATS = collection(db, 'stats'); // docId=Manya/Sharan, {completedCount}
+
+    const USERS = ['Manya','Sharan'];
+    const $ = s => document.querySelector(s);
+    const el = (t,o={}) => Object.assign(document.createElement(t),o);
+    const days = n => n*86400000;
+    const formatDate = iso => iso ? new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : 'No deadline';
+    const tsMs = v => (v?.toMillis?.() ? v.toMillis() : (typeof v === 'number' ? v : 0));
+
+    function dueMeta(iso){
+      if(!iso) return {t:'',c:''};
+      const end = new Date(iso+'T23:59:59').getTime();
+      const diff=end-Date.now();
+      const d=Math.ceil(diff/days(1));
+      if(d<0) return {t:`Overdue ${-d}d`, c:'overdue'};
+      if(d<=3) return {t:`Due ${d}d`, c:'warn'};
+      return {t:`Due ${d}d`, c:''};
+    }
+
+    function taskCard(t){
+      const base = t.status==='done' ? 'task done' : (t.priority ? 'task prio' : 'task normal');
+      const card = el('div',{className:base});
+      const head = el('div',{className:'taskHead'});
+      const title = el('div',{className:'taskTitle'}); title.textContent = t.title || '(Untitled)';
+      const actions = el('div',{className:'actions'});
+      const doneBtn = el('button',{className:'btn-done'}); doneBtn.textContent='Done';
+      const delBtn = el('button',{className:'btn-danger'}); delBtn.textContent='Delete';
+      doneBtn.onclick = async ()=>{ try{ await markDone(t.id, t.assignee); await refresh(); }catch(e){ alert('Mark done failed: '+e.message); }};
+      delBtn.onclick = async ()=>{ try{ await deleteDoc(doc(TASKS, t.id)); await refresh(); }catch(e){ alert('Delete failed: '+e.message); }};
+      if(t.status==='done') actions.append(delBtn); else actions.append(doneBtn, delBtn);
+      head.append(title, actions);
+
+      const chips = el('div',{className:'chips'});
+      const ass = el('span',{className:'chip assignee'}); ass.textContent = 'For '+t.assignee; chips.append(ass);
+      if(t.deadline){
+        const m=dueMeta(t.deadline);
+        const dl=el('span',{className:'chip '+m.c});
+        dl.textContent = `${formatDate(t.deadline)} — ${m.t}`;
+        chips.append(dl);
+      } else {
+        const dl=el('span',{className:'chip'}); dl.textContent='No deadline'; chips.append(dl);
+      }
+
+      card.append(head, chips);
+      return card;
+    }
+
+    async function ensureStats(){
+      const { getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+      for(const u of USERS){
+        const dref = doc(STATS, u);
+        const snap = await getDoc(dref);
+        if(!snap.exists()){ await setDoc(dref,{ completedCount:0 }); }
+      }
+    }
+    async function incrementCount(user){
+      const { doc:docFn, updateDoc:update, increment } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+      await update(docFn(STATS, user), { completedCount: increment(1) });
+    }
+    async function loadCounts(){
+      const { getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+      const m = await getDoc(doc(STATS,'Manya')); const s = await getDoc(doc(STATS,'Sharan'));
+      $('#countManya').textContent = m.exists()? (m.data().completedCount||0) : 0;
+      $('#countSharan').textContent = s.exists()? (s.data().completedCount||0) : 0;
+    }
+
+    async function addTask(){
+      try{
+        const title = $('#title').value.trim(); if(!title) return;
+        const assignee = $('#assignee').value;
+        const priority = $('#priority').checked;
+        const deadline = $('#deadline').value || null;
+        await addDoc(TASKS, {
+          title, assignee, priority, deadline,
+          createdAt: serverTimestamp(),
+          createdAtMs: Date.now(),
+          status:'open', completedAt:null, completedAtMs:null
+        });
+        $('#title').value=''; $('#priority').checked=false; $('#deadline').value='';
+        await refresh();
+      }catch(e){
+        alert('Add failed: ' + (e?.message || e));
+        console.error(e);
+      }
+    }
+
+    async function markDone(id, assignee){
+      const dref = doc(TASKS, id);
+      await updateDoc(dref, { status:'done', completedAt: serverTimestamp(), completedAtMs: Date.now() });
+      await incrementCount(assignee);
+    }
+
+    async function cleanup(){
+      try{
+        const qSnap = await getDocs(query(TASKS, where('status','==','done')));
+        const cutoff = Date.now() - days(3);
+        const toDelete = [];
+        qSnap.forEach(d=>{
+          const x = d.data();
+          const when = tsMs(x.completedAt) || x.completedAtMs || 0;
+          if(when && when < cutoff) toDelete.push(d.id);
+        });
+        await Promise.all(toDelete.map(id => deleteDoc(doc(TASKS,id))));
+      }catch(e){
+        console.warn('Cleanup failed:', e?.message || e);
+      }
+    }
+
+    function splitByUser(open, done){
+      const by = (arr,u)=>arr.filter(x=>x.assignee===u);
+      return {
+        mPrio: by(open,'Manya').filter(x=>x.priority),
+        mOpen: by(open,'Manya').filter(x=>!x.priority),
+        mDone: by(done,'Manya'),
+        sPrio: by(open,'Sharan').filter(x=>x.priority),
+        sOpen: by(open,'Sharan').filter(x=>!x.priority),
+        sDone: by(done,'Sharan'),
+      };
+    }
+
+    function fill(list, arr){
+      list.innerHTML=''; arr.forEach(x=> list.append(taskCard(x)));
+    }
+
+    async function refresh(){
+      try{
+        await cleanup();
+
+        const openSnap = await getDocs(query(TASKS, where('status','==','open')));
+        const doneSnap = await getDocs(query(TASKS, where('status','==','done')));
+
+        const open=[], done=[];
+        openSnap.forEach(d=> open.push({ id:d.id, ...d.data() }));
+        doneSnap.forEach(d=> done.push({ id:d.id, ...d.data() }));
+
+        // Sort (no index needed)
+        open.sort((a,b) => (a.createdAtMs||tsMs(a.createdAt)) - (b.createdAtMs||tsMs(b.createdAt)));
+        done.sort((a,b) => (b.completedAtMs||tsMs(b.completedAt)) - (a.completedAtMs||tsMs(a.completedAt)));
+
+        const { mPrio, mOpen, mDone, sPrio, sOpen, sDone } = splitByUser(open, done);
+
+        fill($('#mPrioList'), mPrio);
+        fill($('#mOpenList'), mOpen);
+        fill($('#mDoneList'), mDone);
+        fill($('#sPrioList'), sPrio);
+        fill($('#sOpenList'), sOpen);
+        fill($('#sDoneList'), sDone);
+
+        $('#mEmpty').style.display = (mPrio.length||mOpen.length||mDone.length)?'none':'block';
+        $('#sEmpty').style.display = (sPrio.length||sOpen.length||sDone.length)?'none':'block';
+
+        $('#mMeta').textContent = `${mPrio.length+mOpen.length} open · ${mDone.length} done`;
+        $('#sMeta').textContent = `${sPrio.length+sOpen.length} open · ${sDone.length} done`;
+
+        await ensureStats();
+        await loadCounts();
+      }catch(e){
+        alert('Load failed: ' + (e?.message || e));
+        console.error(e);
+      }
+    }
+
+    // Wire UI
+    document.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('deleteOldBtn').addEventListener('click', async () => {
+        await cleanup();
+        await refresh();
+        alert('Old completed tasks (older than 3 days) deleted.');
+      });
+      document.getElementById('addBtn').addEventListener('click', addTask);
+
+      onAuthStateChanged(auth, async (u) => {
+        if(!u){ await signInAnonymously(auth); return; }
+        await refresh();
+        setInterval(cleanup, 60_000);
+      });
+    });
+  </script>
+</body>
+</html>
